@@ -63,6 +63,7 @@ if [ "$PLATFORM" == "termux" ]; then
         echo -e "${GREEN}[OK]${NC} llama-server already built."
     else
         echo -e "${YELLOW}[*]${NC} Building llama.cpp from source (this takes ~5 min)..."
+        pkg install -y libomp
         pkg install -y cmake make clang git
         cd /tmp
         rm -rf llama.cpp
