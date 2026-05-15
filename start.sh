@@ -12,7 +12,7 @@ VENV_DIR="$SCRIPT_DIR/venv"
 
 echo ""
 echo " ======================================"
-echo "  CAMCHAT - LOCAL AI"
+echo "  WormGPT - LOCAL AI"
 echo "  by camzzz"
 echo " ======================================"
 echo ""
