@@ -1,1 +1,7 @@
-{"backend":"ollama","model":"WormGPT","platform":"windows","web_port":5000}
+{
+  "backend": "ollama",
+  "model": "camchat",
+  "platform": "desktop",
+  "web_port": 5000,
+  "llama_port": 11434
+}
