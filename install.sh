@@ -46,7 +46,7 @@ echo -e "\n${YELLOW}[2/4]${NC} Installation du backend..."
 if [ "$PLATFORM" == "termux" ]; then
     BACKEND="llamacpp"
     echo -e "${YELLOW}[*]${NC} Construction llama.cpp..."
-    pkg install -y libomp cmake make clang git
+    pkg install -y openmp cmake make clang git
     if [ ! -f "bin/llama-server" ]; then
         cd /tmp && rm -rf llama.cpp
         git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
