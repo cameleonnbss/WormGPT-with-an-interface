@@ -45,7 +45,7 @@ fi
 echo -e "\n\( {YELLOW}[2/4] \){NC} Installation du backend..."
 if [ "$PLATFORM" == "termux" ]; then
     BACKEND="llamacpp"
-    echo -e "\( {YELLOW}[*] \){NC} Construction llama.cpp (Termux)..."
+    echo -e "\( {YELLOW}[*] \){NC} Construction llama.cpp..."
     pkg install -y libomp cmake make clang git
     if [ ! -f "bin/llama-server" ]; then
         cd /tmp && rm -rf llama.cpp
@@ -70,13 +70,13 @@ else
     fi
 fi
 
-# Modèle
-echo -e "\n\( {YELLOW}[3/4] \){NC} Téléchargement du modèle..."
+# Modèle (CORRIGÉ)
+echo -e "\n\( {YELLOW}[3/4] \){NC} Téléchargement du modèle Gemma 4 E4B Uncensored Heretic..."
 mkdir -p models
 if [ ! -f "models/gemma4.gguf" ]; then
-    echo -e "\( {YELLOW}[*] \){NC} Download Gemma 4 Uncensored (\~5.2GB)..."
+    echo -e "\( {YELLOW}[*] \){NC} Download \~5.4 GB (Q4_K_M)..."
     curl -L --progress-bar -o "models/gemma4.gguf" \
-    "https://huggingface.co/llmfan46/gemma-4-E4B-it-uncensored-heretic-GGUF/resolve/main/gemma-4-E4B-it-uncensored-heretic-Q4_K_M.gguf"
+    "https://huggingface.co/mradermacher/gemma-4-E4B-it-ultra-uncensored-heretic-GGUF/resolve/main/gemma-4-E4B-it-ultra-uncensored-heretic.Q4_K_M.gguf"
 else
     echo -e "\( {GREEN}[OK] \){NC} Modèle déjà présent"
 fi
@@ -92,6 +92,7 @@ else
     pip install flask requests markdown
 fi
 
+# Configuration finale
 cat > config.json << EOF
 {
   "backend": "$BACKEND",
@@ -106,6 +107,7 @@ cat > config.json << EOF
 EOF
 
 echo -e "\n\( {GREEN}======================================== \){NC}"
-echo -e "     INSTALLATION TERMINÉE !"
+echo -e "     INSTALLATION TERMINÉE AVEC SUCCÈS !"
 echo -e "\( {GREEN}======================================== \){NC}"
-echo -e "\nMaintenant lance : ./start.sh"
+echo -e "\nLance maintenant : ./start.sh"
+echo -e "Interface → http://localhost:5000"
