@@ -1,50 +1,48 @@
 @echo off
-title CamChat
-color 0C
-
+chcp 65001 >nul
+color 0a
 echo.
-echo  ======================================
-echo   WormGPT - LOCAL AI
-echo   by camzzz
-echo  ======================================
+echo ========================================
+echo          WormGPT - LOCAL AI
+echo ========================================
 echo.
 
-cd /d "%~dp0"
+cd /d "%\~dp0"
 
-:: Find ollama
-set OLLAMA_CMD=ollama
-where ollama >nul 2>&1
-if %errorlevel% neq 0 (
-    if exist "%LOCALAPPDATA%\Programs\Ollama\ollama.exe" (
-        set "OLLAMA_CMD=%LOCALAPPDATA%\Programs\Ollama\ollama.exe"
-    ) else if exist "%ProgramFiles%\Ollama\ollama.exe" (
-        set "OLLAMA_CMD=%ProgramFiles%\Ollama\ollama.exe"
-    ) else (
-        echo [!] Ollama not found. Run install.bat first.
+:: Détection backend
+set BACKEND=ollama
+if exist config.json (
+    for /f "tokens=*" %%a in ('powershell -NoProfile -Command "Get-Content config.json | ConvertFrom-Json | Select-Object -ExpandProperty backend"') do set BACKEND=%%a
+)
+
+echo [INFO] Backend détecté : %BACKEND%
+
+if "%BACKEND%"=="llamacpp" (
+    echo [INFO] Démarrage llama.cpp sur port 11434...
+    if not exist bin\llama-server.exe (
+        echo [ERREUR] llama-server manquant. Lance install.bat d'abord.
         pause
-        exit /b 1
+        exit
     )
+    start /b "" bin\llama-server.exe -m models\gemma4.gguf --host 0.0.0.0 --port 11434 -c 16384 --n-gpu-layers 35 >nul 2>&1
+) else (
+    echo [INFO] Démarrage Ollama...
+    start /b ollama serve
+    timeout /t 4 >nul
 )
 
-:: Start Ollama serve
-echo [*] Starting Ollama...
-start /B "" %OLLAMA_CMD% serve >nul 2>&1
-timeout /t 3 /nobreak >nul
+echo.
+echo ========================================
+echo     Interface → http://localhost:5000
+echo     Appuyez sur Ctrl+C pour arrêter
+echo ========================================
+echo.
 
-:: Check model
-echo [*] Checking model...
-%OLLAMA_CMD% list 2>nul | findstr "camchat" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [!] Model "camchat" not found. Run install.bat first.
-    pause
-    exit /b 1
+if exist venv (
+    call venv\Scripts\activate.bat
 )
-echo [OK] Model ready.
-echo.
-echo  ======================================
-echo   READY - http://localhost:5000
-echo   Press Ctrl+C to stop
-echo  ======================================
-echo.
 
-python "chatbot\app.py"
+set BACKEND=%BACKEND%
+python chatbot\app.py
+
+pause
