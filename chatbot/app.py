@@ -27,11 +27,9 @@ def get_backend():
     if env:
         return env
     return load_config().get("backend", "ollama")
-
 def get_llama_url():
-    backend = get_backend()
-    if backend == "ollama":
-        return "http://127.0.0.1:11434/v1/chat/completions"
+    """URL unifiée sur le port 11434 pour Ollama ET llama.cpp"""
+    return "http://127.0.0.1:11434/v1/chat/completions"
     port = load_config().get("llama_port", 8080)
     return f"http://127.0.0.1:{port}/v1/chat/completions"
 
@@ -179,15 +177,14 @@ def reset():
 
 @app.route("/status")
 def status():
-    backend = get_backend()
     try:
-        if backend == "ollama":
-            resp = http_requests.get("http://127.0.0.1:11434/api/tags", timeout=3)
-        else:
-            resp = http_requests.get(f"http://127.0.0.1:{load_config().get('llama_port', 8080)}/health", timeout=3)
-        return jsonify({"llama": "online" if resp.status_code == 200 else "error", "backend": backend})
+        r = requests.get("http://127.0.0.1:11434/health", timeout=5)
+        return jsonify({
+            "status": "online" if r.status_code == 200 else "error",
+            "backend": get_backend()
+        })
     except:
-        return jsonify({"llama": "offline", "backend": backend})
+        return jsonify({"status": "offline", "backend": get_backend()})
 
 @app.route("/stats")
 def stats():
