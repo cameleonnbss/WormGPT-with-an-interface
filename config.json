@@ -1,1 +1,1 @@
-{"backend":"ollama","model":"camchat","platform":"windows","web_port":5000}
+{"backend":"ollama","model":"WormGPT","platform":"windows","web_port":5000}
