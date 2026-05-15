@@ -34,7 +34,7 @@ if "%BACKEND%"=="llamacpp" (
 echo.
 echo ========================================
 echo     Interface → http://localhost:5000
-echo     Appuyez sur Ctrl+C pour arrêter
+echo     Ctrl+C pour arrêter
 echo ========================================
 echo.
 
