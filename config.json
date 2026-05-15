@@ -3,5 +3,8 @@
   "model": "camchat",
   "platform": "desktop",
   "web_port": 5000,
-  "llama_port": 11434
+  "llama_port": 11434,
+  "context_size": 32768,
+  "temperature": 0.85,
+  "max_tokens": 2048
 }
