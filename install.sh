@@ -11,7 +11,7 @@ INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo ""
 echo " ======================================"
-echo "  CAMCHAT - LOCAL AI INSTALLER"
+echo "  WormGPT - LOCAL AI INSTALLER"
 echo "  by camzzz"
 echo " ======================================"
 echo ""
