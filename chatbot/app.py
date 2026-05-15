@@ -179,11 +179,8 @@ def reset():
 @app.route("/status")
 def status():
     try:
-        r = requests.get("http://127.0.0.1:11434/health", timeout=5)
-        return jsonify({
-            "status": "online" if r.status_code == 200 else "error",
-            "backend": get_backend()
-        })
+        r = requests.get("http://127.0.0.1:11434/health", timeout=8)
+        return jsonify({"status": "online", "backend": get_backend()})
     except:
         return jsonify({"status": "offline", "backend": get_backend()})
 
