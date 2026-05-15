@@ -6,12 +6,12 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-INSTALL_DIR="\( (cd " \)(dirname "$0")" && pwd)"
+INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$INSTALL_DIR"
 
-echo -e "\( {GREEN}======================================== \){NC}"
+echo -e "${GREEN}========================================${NC}"
 echo -e "     WormGPT - LOCAL AI INSTALLER"
-echo -e "\( {GREEN}======================================== \){NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
 
 # Détection plateforme
@@ -25,12 +25,12 @@ else
     PLATFORM="unknown"
 fi
 
-echo -e "\( {GREEN}[*] \){NC} Plateforme détectée : $PLATFORM"
+echo -e "${GREEN}[*]${NC} Plateforme détectée : $PLATFORM"
 
 # Python
-echo -e "\n\( {YELLOW}[1/4] \){NC} Configuration Python..."
+echo -e "\n${YELLOW}[1/4]${NC} Configuration Python..."
 if ! command -v python3 &> /dev/null; then
-    echo -e "\( {YELLOW}[*] \){NC} Installation Python..."
+    echo -e "${YELLOW}[*]${NC} Installation Python..."
     case "$PLATFORM" in
         termux) pkg install -y python ;;
         linux)
@@ -42,10 +42,10 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Backend
-echo -e "\n\( {YELLOW}[2/4] \){NC} Installation du backend..."
+echo -e "\n${YELLOW}[2/4]${NC} Installation du backend..."
 if [ "$PLATFORM" == "termux" ]; then
     BACKEND="llamacpp"
-    echo -e "\( {YELLOW}[*] \){NC} Construction llama.cpp..."
+    echo -e "${YELLOW}[*]${NC} Construction llama.cpp..."
     pkg install -y libomp cmake make clang git
     if [ ! -f "bin/llama-server" ]; then
         cd /tmp && rm -rf llama.cpp
@@ -61,7 +61,7 @@ if [ "$PLATFORM" == "termux" ]; then
 else
     BACKEND="ollama"
     if ! command -v ollama &> /dev/null; then
-        echo -e "\( {YELLOW}[*] \){NC} Installation Ollama..."
+        echo -e "${YELLOW}[*]${NC} Installation Ollama..."
         if [ "$PLATFORM" == "macos" ]; then
             brew install ollama
         else
@@ -70,19 +70,19 @@ else
     fi
 fi
 
-# Modèle (CORRIGÉ)
-echo -e "\n\( {YELLOW}[3/4] \){NC} Téléchargement du modèle Gemma 4 E4B Uncensored Heretic..."
+# Modèle
+echo -e "\n${YELLOW}[3/4]${NC} Téléchargement du modèle Gemma 4 E4B Uncensored Heretic..."
 mkdir -p models
 if [ ! -f "models/gemma4.gguf" ]; then
-    echo -e "\( {YELLOW}[*] \){NC} Download \~5.4 GB (Q4_K_M)..."
+    echo -e "${YELLOW}[*]${NC} Download ~5.4 GB (Q4_K_M)..."
     curl -L --progress-bar -o "models/gemma4.gguf" \
     "https://huggingface.co/mradermacher/gemma-4-E4B-it-ultra-uncensored-heretic-GGUF/resolve/main/gemma-4-E4B-it-ultra-uncensored-heretic.Q4_K_M.gguf"
 else
-    echo -e "\( {GREEN}[OK] \){NC} Modèle déjà présent"
+    echo -e "${GREEN}[OK]${NC} Modèle déjà présent"
 fi
 
 # Python deps + Config
-echo -e "\n\( {YELLOW}[4/4] \){NC} Installation dépendances Python..."
+echo -e "\n${YELLOW}[4/4]${NC} Installation dépendances Python..."
 if [ "$PLATFORM" == "termux" ]; then
     pip install flask requests markdown
 else
@@ -106,8 +106,8 @@ cat > config.json << EOF
 }
 EOF
 
-echo -e "\n\( {GREEN}======================================== \){NC}"
+echo -e "\n${GREEN}========================================${NC}"
 echo -e "     INSTALLATION TERMINÉE AVEC SUCCÈS !"
-echo -e "\( {GREEN}======================================== \){NC}"
+echo -e "${GREEN}========================================${NC}"
 echo -e "\nLance maintenant : ./start.sh"
 echo -e "Interface → http://localhost:5000"
