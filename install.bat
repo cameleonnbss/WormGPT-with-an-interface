@@ -4,7 +4,7 @@ color 0C
 
 echo.
 echo  ======================================
-echo   CAMCHAT - LOCAL AI INSTALLER
+echo   WormGPT - LOCAL AI INSTALLER
 echo   by camzzz
 echo  ======================================
 echo.
