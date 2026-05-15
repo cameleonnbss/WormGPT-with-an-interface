@@ -13,13 +13,12 @@ echo -e "\( {GREEN}======================================== \){NC}"
 echo -e "         WormGPT - LOCAL AI"
 echo -e "\( {GREEN}======================================== \){NC}"
 
-# Détection plateforme
+# Détection plateforme et backend
 if [[ "$OSTYPE" == "linux-android"* ]] || [ -d "/data/data/com.termux" ]; then
     PLATFORM="termux"
     BACKEND="llamacpp"
 else
     PLATFORM="desktop"
-    # Par défaut Ollama si disponible, sinon llama.cpp
     if command -v ollama >/dev/null 2>&1; then
         BACKEND="ollama"
     else
@@ -27,16 +26,16 @@ else
     fi
 fi
 
-# Charger config si elle existe
+# Charger le backend depuis config.json si présent
 if [ -f "config.json" ]; then
-    CONFIG_BACKEND=$(python3 -c "
+    CONFIG_BACKEND=$(python3 -c '
 import json
 try:
-    with open('config.json') as f:
-        print(json.load(f).get('backend', '$BACKEND'))
+    with open("config.json") as f:
+        print(json.load(f).get("backend", "'$BACKEND'"))
 except:
-    print('$BACKEND')
-" 2>/dev/null || echo "$BACKEND")
+    print("'$BACKEND'")
+' 2>/dev/null || echo "$BACKEND")
     BACKEND="$CONFIG_BACKEND"
 fi
 
@@ -51,7 +50,7 @@ trap cleanup SIGINT SIGTERM
 
 # === Lancement du backend ===
 if [ "$BACKEND" = "llamacpp" ]; then
-    echo -e "\( {YELLOW}[*] \){NC} Démarrage llama.cpp sur port 11434 (compatible Ollama)..."
+    echo -e "\( {YELLOW}[*] \){NC} Démarrage llama.cpp sur port 11434..."
 
     if [ ! -f "bin/llama-server" ] || [ ! -f "models/gemma4.gguf" ]; then
         echo -e "\( {RED}[!] \){NC} Modèle ou llama-server manquant. Exécute ./install.sh d'abord."
@@ -62,13 +61,12 @@ if [ "$BACKEND" = "llamacpp" ]; then
         -m "$SCRIPT_DIR/models/gemma4.gguf" \
         --host 0.0.0.0 \
         --port 11434 \
-        -c 16384 \                  # Context raisonnable (ajuste selon ta RAM)
-        --n-gpu-layers 0 \          # Termux = 0, sur desktop tu peux mettre 40+
+        -c 16384 \
+        --n-gpu-layers 0 \
         > /dev/null 2>&1 &
 
-    LLAMA_PID=$!
-
     # Health check
+    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur llama.cpp..."
     for i in {1..40}; do
         if curl -s http://127.0.0.1:11434/health >/dev/null 2>&1; then
             echo -e "\( {GREEN}[OK] \){NC} llama-server prêt sur port 11434"
@@ -77,21 +75,21 @@ if [ "$BACKEND" = "llamacpp" ]; then
         sleep 1
     done
 else
-    # Mode Ollama (Windows/Linux/macOS)
+    # Mode Ollama
     echo -e "\( {YELLOW}[*] \){NC} Démarrage Ollama..."
     ollama serve >/dev/null 2>&1 &
     sleep 4
 
-    if ! ollama list | grep -q "camchat"; then
-        echo -e "\( {RED}[!] \){NC} Modèle 'camchat' non trouvé dans Ollama."
-        echo "Exécute ollama create camchat -f Modelfile"
+    if ! ollama list 2>/dev/null | grep -q "camchat"; then
+        echo -e "\( {RED}[!] \){NC} Modèle 'camchat' non trouvé."
+        echo "Exécute : ollama create camchat -f Modelfile"
         exit 1
     fi
     echo -e "\( {GREEN}[OK] \){NC} Ollama + camchat prêt"
 fi
 
 echo -e "\n\( {GREEN}======================================== \){NC}"
-echo -e "     🚀 Interface disponible sur → http://localhost:5000"
+echo -e "     🚀 Interface → http://localhost:5000"
 echo -e "\( {GREEN}======================================== \){NC}"
 
 # Lancement Flask
