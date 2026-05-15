@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
 
+# Couleurs
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# Chemin correct
 SCRIPT_DIR="\( (cd " \)(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -27,7 +29,7 @@ else
     fi
 fi
 
-# Surcharge depuis config.json
+# Surcharge avec le config.json
 if [ -f "config.json" ]; then
     CONFIG_BACKEND=$(python3 -c '
 import json
@@ -42,6 +44,7 @@ fi
 
 echo -e "\( {GREEN}[*] \){NC} Plateforme : $PLATFORM | Backend : $BACKEND"
 
+# Fonction cleanup
 cleanup() {
     echo -e "\n\( {YELLOW}[*] \){NC} Arrêt en cours..."
     kill $(jobs -p) 2>/dev/null || true
@@ -49,13 +52,13 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM
 
-# === Backend ===
+# === Lancement Backend ===
 if [ "$BACKEND" = "llamacpp" ]; then
     echo -e "\( {YELLOW}[*] \){NC} Démarrage llama.cpp sur port 11434..."
 
     if [ ! -f "bin/llama-server" ] || [ ! -f "models/gemma4.gguf" ]; then
         echo -e "\( {RED}[!] \){NC} Modèle ou llama-server manquant."
-        echo -e "   → Lance ./install.sh d'abord"
+        echo -e "   → Exécute ./install.sh d'abord"
         exit 1
     fi
 
@@ -67,31 +70,33 @@ if [ "$BACKEND" = "llamacpp" ]; then
         --n-gpu-layers 0 \
         > /dev/null 2>&1 &
 
-    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur..."
+    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur (max 40 secondes)..."
     for i in {1..40}; do
         if curl -s --max-time 2 http://127.0.0.1:11434/health >/dev/null 2>&1; then
-            echo -e "\( {GREEN}[OK] \){NC} llama-server prêt"
+            echo -e "\( {GREEN}[OK] \){NC} llama-server prêt sur http://127.0.0.1:11434"
             break
         fi
         sleep 1
     done
 else
+    # Mode Ollama
     echo -e "\( {YELLOW}[*] \){NC} Démarrage Ollama..."
     ollama serve >/dev/null 2>&1 &
     sleep 4
 
     if ! ollama list 2>/dev/null | grep -q "camchat"; then
-        echo -e "\( {RED}[!] \){NC} Modèle 'camchat' non trouvé."
+        echo -e "\( {RED}[!] \){NC} Modèle 'camchat' non trouvé dans Ollama."
+        echo -e "   → ollama create camchat -f Modelfile"
         exit 1
     fi
-    echo -e "\( {GREEN}[OK] \){NC} Ollama prêt"
+    echo -e "\( {GREEN}[OK] \){NC} Ollama + camchat prêt"
 fi
 
 echo -e "\n\( {GREEN}======================================== \){NC}"
-echo -e "     🚀 http://localhost:5000"
+echo -e "     🚀 Interface → http://localhost:5000"
 echo -e "\( {GREEN}======================================== \){NC}"
 
-# Flask
+# Lancement Flask
 if [ -d "venv" ]; then
     source venv/bin/activate 2>/dev/null || true
 fi
