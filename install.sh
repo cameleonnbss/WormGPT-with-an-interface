@@ -4,121 +4,108 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m'
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+INSTALL_DIR="\( (cd " \)(dirname "$0")" && pwd)"
+cd "$INSTALL_DIR"
 
-echo -e "${GREEN}========================================${NC}"
-echo -e "       WormGPT - Installation"
-echo -e "${GREEN}========================================${NC}"
+echo -e "\( {GREEN}======================================== \){NC}"
+echo -e "     WormGPT - LOCAL AI INSTALLER"
+echo -e "\( {GREEN}======================================== \){NC}"
 echo ""
 
 # Détection plateforme
-if [[ "$OSTYPE" == "linux-android"* ]] || [ -d "/data/data/com.termux" ]; then
+if [ -d "/data/data/com.termux" ]; then
     PLATFORM="termux"
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    PLATFORM="linux"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    PLATFORM="macos"
 else
-    PLATFORM="desktop"
+    PLATFORM="unknown"
 fi
 
-echo -e "${GREEN}[*]${NC} Plateforme détectée : $PLATFORM"
+echo -e "\( {GREEN}[*] \){NC} Plateforme détectée : $PLATFORM"
 
-# Vérifier les dépendances
-echo -e "${YELLOW}[*]${NC} Vérification des dépendances..."
-
-check_cmd() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        echo -e "${RED}[!]${NC} $1 n'est pas installé."
-        return 1
-    fi
-    echo -e "${GREEN}[OK]${NC} $1 trouvé"
-    return 0
-}
-
-check_cmd python3 || exit 1
-check_cmd curl || exit 1
-
-# Créer l'environnement virtuel
-if [ ! -d "venv" ]; then
-    echo -e "${YELLOW}[*]${NC} Création du venv..."
-    python3 -m venv venv
+# Python
+echo -e "\n\( {YELLOW}[1/4] \){NC} Configuration Python..."
+if ! command -v python3 &> /dev/null; then
+    echo -e "\( {YELLOW}[*] \){NC} Installation Python..."
+    case "$PLATFORM" in
+        termux) pkg install -y python ;;
+        linux)
+            sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv || \
+            sudo dnf install -y python3 python3-pip || \
+            sudo pacman -Sy --noconfirm python python-pip ;;
+        macos) brew install python ;;
+    esac
 fi
 
-source venv/bin/activate
-
-echo -e "${YELLOW}[*]${NC} Installation des dépendances Python..."
-pip install --upgrade pip >/dev/null 2>&1
-pip install flask requests >/dev/null 2>&1
-
-echo -e "${GREEN}[OK]${NC} Dépendances Python installées"
-
-# Téléchargement llama.cpp (desktop uniquement)
-if [ "$PLATFORM" = "desktop" ]; then
+# Backend
+echo -e "\n\( {YELLOW}[2/4] \){NC} Installation du backend..."
+if [ "$PLATFORM" == "termux" ]; then
+    BACKEND="llamacpp"
+    echo -e "\( {YELLOW}[*] \){NC} Construction llama.cpp (Termux)..."
+    pkg install -y libomp cmake make clang git
     if [ ! -f "bin/llama-server" ]; then
-        echo -e "${YELLOW}[*]${NC} Téléchargement de llama-server..."
-        mkdir -p bin
-        
-        # Détection architecture
-        ARCH=$(uname -m)
-        if [ "$ARCH" = "x86_64" ]; then
-            LLAMA_URL="https://github.com/ggerganov/llama.cpp/releases/download/b3946/llama-b3946-bin-ubuntu-x64.zip"
-        elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-            LLAMA_URL="https://github.com/ggerganov/llama.cpp/releases/download/b3946/llama-b3946-bin-ubuntu-arm64.zip"
+        cd /tmp && rm -rf llama.cpp
+        git clone --depth 1 https://github.com/ggml-org/llama.cpp.git
+        cd llama.cpp
+        cmake -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release -j$(nproc) --target llama-server
+        mkdir -p "$INSTALL_DIR/bin"
+        cp build/bin/llama-server "$INSTALL_DIR/bin/llama-server"
+        cd "$INSTALL_DIR"
+        rm -rf /tmp/llama.cpp
+    fi
+else
+    BACKEND="ollama"
+    if ! command -v ollama &> /dev/null; then
+        echo -e "\( {YELLOW}[*] \){NC} Installation Ollama..."
+        if [ "$PLATFORM" == "macos" ]; then
+            brew install ollama
         else
-            echo -e "${YELLOW}[!]${NC} Architecture $ARCH non supportée pour le binaire précompilé."
-            echo -e "    Compilation manuelle nécessaire."
-            exit 1
+            curl -fsSL https://ollama.com/install.sh | sh
         fi
-        
-        curl -L -o /tmp/llama.zip "$LLAMA_URL" 2>/dev/null
-        unzip -q /tmp/llama.zip -d /tmp/llama_extract
-        cp /tmp/llama_extract/build/bin/llama-server bin/llama-server 2>/dev/null || \
-        cp /tmp/llama_extract/bin/llama-server bin/llama-server 2>/dev/null || \
-        find /tmp/llama_extract -name "llama-server" -exec cp {} bin/llama-server \;
-        chmod +x bin/llama-server
-        rm -rf /tmp/llama.zip /tmp/llama_extract
-        echo -e "${GREEN}[OK]${NC} llama-server installé"
-    else
-        echo -e "${GREEN}[OK]${NC} llama-server déjà présent"
     fi
 fi
 
-# Téléchargement du modèle
+# Modèle
+echo -e "\n\( {YELLOW}[3/4] \){NC} Téléchargement du modèle..."
 mkdir -p models
 if [ ! -f "models/gemma4.gguf" ]; then
-    echo -e "${YELLOW}[*]${NC} Téléchargement du modèle Gemma 4B..."
-    echo -e "${BLUE}    Cela peut prendre quelques minutes...${NC}"
-    
-    # URL du modèle (à adapter selon ton modèle exact)
-    MODEL_URL="https://huggingface.co/google/gemma-2-2b-it/resolve/main/gemma-2-2b-it-Q4_K_M.gguf"
-    
-    curl -L --progress-bar -o models/gemma4.gguf "$MODEL_URL" || {
-        echo -e "${RED}[!]${NC} Échec du téléchargement du modèle."
-        echo -e "    Télécharge manuellement le .gguf dans le dossier models/"
-        exit 1
-    }
-    echo -e "${GREEN}[OK]${NC} Modèle téléchargé"
+    echo -e "\( {YELLOW}[*] \){NC} Download Gemma 4 Uncensored (\~5.2GB)..."
+    curl -L --progress-bar -o "models/gemma4.gguf" \
+    "https://huggingface.co/llmfan46/gemma-4-E4B-it-uncensored-heretic-GGUF/resolve/main/gemma-4-E4B-it-uncensored-heretic-Q4_K_M.gguf"
 else
-    echo -e "${GREEN}[OK]${NC} Modèle déjà présent"
+    echo -e "\( {GREEN}[OK] \){NC} Modèle déjà présent"
 fi
 
-# Création du config.json
-if [ ! -f "config.json" ]; then
-    cat > config.json << 'EOF'
+# Python deps + Config
+echo -e "\n\( {YELLOW}[4/4] \){NC} Installation dépendances Python..."
+if [ "$PLATFORM" == "termux" ]; then
+    pip install flask requests markdown
+else
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+    pip install flask requests markdown
+fi
+
+cat > config.json << EOF
 {
-    "backend": "llamacpp",
-    "model_path": "models/gemma4.gguf",
-    "host": "0.0.0.0",
-    "port": 5000
+  "backend": "$BACKEND",
+  "model": "camchat",
+  "platform": "$PLATFORM",
+  "web_port": 5000,
+  "llama_port": 11434,
+  "context_size": 32768,
+  "temperature": 0.85,
+  "max_tokens": 2048
 }
 EOF
-    echo -e "${GREEN}[OK]${NC} config.json créé"
-fi
 
-echo ""
-echo -e "${GREEN}========================================${NC}"
-echo -e "   ${GREEN}Installation terminée !${NC}"
-echo -e ""
-echo -e "   Lance avec : ${YELLOW}./start.sh${NC}"
-echo -e "${GREEN}========================================${NC}"
+echo -e "\n\( {GREEN}======================================== \){NC}"
+echo -e "     INSTALLATION TERMINÉE !"
+echo -e "\( {GREEN}======================================== \){NC}"
+echo -e "\nMaintenant lance : ./start.sh"
