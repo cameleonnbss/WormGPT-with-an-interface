@@ -28,10 +28,11 @@ def get_backend():
         return env
     return load_config().get("backend", "ollama")
 def get_llama_url():
-    """URL unifiée sur le port 11434 pour Ollama ET llama.cpp"""
-    return "http://127.0.0.1:11434/v1/chat/completions"
-    port = load_config().get("llama_port", 8080)
-    return f"http://127.0.0.1:{port}/v1/chat/completions"
+    backend = get_backend()
+    if backend == "ollama":
+        return "http://127.0.0.1:11434/v1/chat/completions"
+    else:  # llamacpp
+        return "http://127.0.0.1:11434/v1/chat/completions"   # même port maintenant
 
 def get_model_name():
     backend = get_backend()
