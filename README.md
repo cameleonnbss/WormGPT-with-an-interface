@@ -43,28 +43,169 @@
 
 ## Quick Start
 
-### Windows
+### WINDOWS (PowerShell as Administrator)
 
-```cmd
-install.bat
-start.bat
+```powershell
+# 1. Clone the repository
+git clone https://github.com/cameleonnbss/WormGPT-with-an-interface.git
+cd WormGPT-with-an-interface
+
+# 2. Run the installer
+.\install.bat
+
+# 3. Start WormGPT
+.\start.bat
 ```
 
-### Linux / macOS
+### LINUX / macOS (Terminal)
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/cameleonnbss/WormGPT-with-an-interface.git
+cd WormGPT-with-an-interface
+
+# 2. Make scripts executable
 chmod +x install.sh start.sh
+
+# 3. Run the installer
 ./install.sh
+
+# 4. Start WormGPT
 ./start.sh
 ```
 
-### Termux (Android)
+### TERMUX (Android)
 
 ```bash
+# 1. Update packages
+pkg update && pkg upgrade -y
+
+# 2. Install dependencies
+pkg install -y git python clang cmake build-essential
+
+# 3. Clone the repository
+git clone https://github.com/cameleonnbss/WormGPT-with-an-interface.git
+cd WormGPT-with-an-interface
+
+# 4. Make scripts executable
 chmod +x install.sh start.sh
+
+# 5. Run the installer
 ./install.sh
+
+# 6. Start WormGPT
 ./start.sh
 ```
+
+---
+
+## 🚀 MANUAL INSTALLATION (If scripts fail)
+
+### Step 1: Install Python
+
+**Windows:**
+```powershell
+winget install Python.Python.3.12
+```
+
+**Linux:**
+```bash
+sudo apt update && sudo apt install python3 python3-pip python3-venv -y
+```
+
+**macOS:**
+```bash
+brew install python@3.12
+```
+
+### Step 2: Install Backend (Ollama or llama.cpp)
+
+**Option A - Ollama (Recommended for GPU):**
+
+```bash
+# Windows
+winget install Ollama.Ollama
+
+# Linux/macOS
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Termux - use llama.cpp instead
+```
+
+**Option B - llama.cpp (For Termux / CPU only):**
+
+```bash
+git clone https://github.com/ggerganov/llama.cpp.git
+cd llama.cpp
+mkdir build && cd build
+cmake .. -DLLAMA_CUBLAS=OFF  # Set ON for NVIDIA GPU
+cmake --build . --config Release -j$(nproc)
+```
+
+### Step 3: Download the Model
+
+```bash
+# Create models directory
+mkdir -p models
+
+# Download Gemma 4 E4B Uncensored Heretic (~5GB)
+cd models
+curl -L -o gemma-4-heretic.Q4_K_M.gguf "https://huggingface.co/bartowski/Gemma-4-E4B-Heretic-GGUF/resolve/main/Gemma-4-E4B-Heretic.Q4_K_M.gguf"
+cd ..
+```
+
+### Step 4: Install Python Dependencies
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate the environment
+# Windows:
+venv\Scripts\activate
+# Linux/macOS/Termux:
+source venv/bin/activate
+
+# Install Flask and dependencies
+pip install flask flask-cors requests
+```
+
+### Step 5: Create Configuration File
+
+Create `config.json`:
+
+```json
+{
+    "model_path": "models/gemma-4-heretic.Q4_K_M.gguf",
+    "backend": "ollama",
+    "context_size": 131072,
+    "temperature": 0.85,
+    "max_tokens": 1500,
+    "port": 5000,
+    "gpu_layers": 33,
+    "threads": 8
+}
+```
+
+### Step 6: Launch Manually
+
+```bash
+# Start Ollama (if using)
+ollama serve &
+
+# Launch web interface
+python chatbot/app.py
+```
+
+---
+
+
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Launch web interface
+echo "[*] Starting server on http://localhost:5000
 
 Then open **http://localhost:5000** in your browser.
 
