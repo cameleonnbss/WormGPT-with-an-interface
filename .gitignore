@@ -1,0 +1,7 @@
+models/
+venv/
+history/
+__pycache__/
+*.pyc
+.env
+config.json
