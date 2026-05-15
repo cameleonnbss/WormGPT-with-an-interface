@@ -12,6 +12,7 @@ cd "$SCRIPT_DIR"
 echo -e "\( {GREEN}======================================== \){NC}"
 echo -e "         WormGPT - LOCAL AI"
 echo -e "\( {GREEN}======================================== \){NC}"
+echo ""
 
 # Détection plateforme et backend
 if [[ "$OSTYPE" == "linux-android"* ]] || [ -d "/data/data/com.termux" ]; then
@@ -26,7 +27,7 @@ else
     fi
 fi
 
-# Charger le backend depuis config.json si présent
+# Surcharge avec config.json si elle existe
 if [ -f "config.json" ]; then
     CONFIG_BACKEND=$(python3 -c '
 import json
@@ -53,7 +54,8 @@ if [ "$BACKEND" = "llamacpp" ]; then
     echo -e "\( {YELLOW}[*] \){NC} Démarrage llama.cpp sur port 11434..."
 
     if [ ! -f "bin/llama-server" ] || [ ! -f "models/gemma4.gguf" ]; then
-        echo -e "\( {RED}[!] \){NC} Modèle ou llama-server manquant. Exécute ./install.sh d'abord."
+        echo -e "\( {RED}[!] \){NC} Modèle ou llama-server manquant."
+        echo -e "   → Exécute ./install.sh d'abord"
         exit 1
     fi
 
@@ -65,10 +67,9 @@ if [ "$BACKEND" = "llamacpp" ]; then
         --n-gpu-layers 0 \
         > /dev/null 2>&1 &
 
-    # Health check
-    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur llama.cpp..."
+    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur (max 40s)..."
     for i in {1..40}; do
-        if curl -s http://127.0.0.1:11434/health >/dev/null 2>&1; then
+        if curl -s --max-time 2 http://127.0.0.1:11434/health >/dev/null 2>&1; then
             echo -e "\( {GREEN}[OK] \){NC} llama-server prêt sur port 11434"
             break
         fi
@@ -82,17 +83,17 @@ else
 
     if ! ollama list 2>/dev/null | grep -q "camchat"; then
         echo -e "\( {RED}[!] \){NC} Modèle 'camchat' non trouvé."
-        echo "Exécute : ollama create camchat -f Modelfile"
+        echo -e "   → ollama create camchat -f Modelfile"
         exit 1
     fi
     echo -e "\( {GREEN}[OK] \){NC} Ollama + camchat prêt"
 fi
 
 echo -e "\n\( {GREEN}======================================== \){NC}"
-echo -e "     🚀 Interface → http://localhost:5000"
+echo -e "     🚀 Interface web → http://localhost:5000"
 echo -e "\( {GREEN}======================================== \){NC}"
 
-# Lancement Flask
+# Lancement de l'interface Flask
 if [ -d "venv" ]; then
     source venv/bin/activate 2>/dev/null || true
 fi
