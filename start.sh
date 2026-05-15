@@ -27,7 +27,7 @@ else
     fi
 fi
 
-# Surcharge avec config.json si elle existe
+# Surcharge depuis config.json
 if [ -f "config.json" ]; then
     CONFIG_BACKEND=$(python3 -c '
 import json
@@ -49,13 +49,13 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM
 
-# === Lancement du backend ===
+# === Backend ===
 if [ "$BACKEND" = "llamacpp" ]; then
     echo -e "\( {YELLOW}[*] \){NC} Démarrage llama.cpp sur port 11434..."
 
     if [ ! -f "bin/llama-server" ] || [ ! -f "models/gemma4.gguf" ]; then
         echo -e "\( {RED}[!] \){NC} Modèle ou llama-server manquant."
-        echo -e "   → Exécute ./install.sh d'abord"
+        echo -e "   → Lance ./install.sh d'abord"
         exit 1
     fi
 
@@ -67,33 +67,31 @@ if [ "$BACKEND" = "llamacpp" ]; then
         --n-gpu-layers 0 \
         > /dev/null 2>&1 &
 
-    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur (max 40s)..."
+    echo -e "\( {YELLOW}[*] \){NC} Attente du serveur..."
     for i in {1..40}; do
         if curl -s --max-time 2 http://127.0.0.1:11434/health >/dev/null 2>&1; then
-            echo -e "\( {GREEN}[OK] \){NC} llama-server prêt sur port 11434"
+            echo -e "\( {GREEN}[OK] \){NC} llama-server prêt"
             break
         fi
         sleep 1
     done
 else
-    # Mode Ollama
     echo -e "\( {YELLOW}[*] \){NC} Démarrage Ollama..."
     ollama serve >/dev/null 2>&1 &
     sleep 4
 
     if ! ollama list 2>/dev/null | grep -q "camchat"; then
         echo -e "\( {RED}[!] \){NC} Modèle 'camchat' non trouvé."
-        echo -e "   → ollama create camchat -f Modelfile"
         exit 1
     fi
-    echo -e "\( {GREEN}[OK] \){NC} Ollama + camchat prêt"
+    echo -e "\( {GREEN}[OK] \){NC} Ollama prêt"
 fi
 
 echo -e "\n\( {GREEN}======================================== \){NC}"
-echo -e "     🚀 Interface web → http://localhost:5000"
+echo -e "     🚀 http://localhost:5000"
 echo -e "\( {GREEN}======================================== \){NC}"
 
-# Lancement de l'interface Flask
+# Flask
 if [ -d "venv" ]; then
     source venv/bin/activate 2>/dev/null || true
 fi
